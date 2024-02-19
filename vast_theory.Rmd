@@ -1,0 +1,470 @@
+---
+title: "Introduction to spatio-temporal modelling for environment and ecology"
+subtitle: "VAST theory"
+date: "March 2024"
+fontsize: 10pt
+bibliography : ["ref.bib"]
+csl : ices-journal-of-marine-science.csl
+output:
+  beamer_presentation:
+    theme: "Boadilla"
+    colortheme: "default"
+    slide_level: 3
+    # template: mytemplate.tex
+    includes:
+      in_header: header-simple.tex
+---
+
+```{r setup, include=FALSE}
+
+knitr::opts_chunk$set(echo = TRUE)
+
+library(corrplot)
+library(dplyr)
+library(fields)
+library(geoR)
+library(ggplot2)
+library(gstlearn)
+library(INLA)
+library(mapdata)
+library(maps)
+library(paletteer)
+library(plot.matrix)
+library(sf)
+library(sp)
+library(splancs)
+library(tidyr)
+
+run_simu <- F
+
+# Map
+mapBase <- map("worldHires", fill = T, plot = F)
+mapBase <- st_as_sf(mapBase) %>% filter(ID %in% c("France","Spain","UK","Ireland"))
+grid_projection <- "+proj=longlat +datum=WGS84"
+
+```
+
+
+# Introduction
+
+\frametitle{Some illustrations}
+
+\center
+\includegraphics[width=1\textwidth]{images/simu1.png}
+
+---
+
+\center
+\includegraphics[width=1\textwidth]{images/simu2.png}
+
+---
+
+
+```{r,include=F,fig.align='center'}
+
+# EVHOE data
+load("data/EVHOE_2008_2019.RData")
+
+# Haul data
+Haul_df <- Save_Datras$datras_HH.full %>%
+  dplyr::select(Year,long,lati,StNo,HaulNo,Depth)
+
+# Extent of the EVHOE domain
+xlims <- range(pretty(Haul_df$long))
+ylims <- range(pretty(Haul_df$lati))
+
+# Catch data
+Catch_df <- Save_Datras$datras_sp.HL.full %>%
+  group_by(Year,long,lati,StNo,HaulNo,scientificname) %>%
+  dplyr::summarise(CatchWgt = CatCatchWgt)
+
+# Join with haul data to add missing hauls to catch data
+Catch_df_2 <- full_join(Catch_df,Haul_df) %>%
+  filter(scientificname == "Merluccius_merluccius")
+Catch_df_2$CatchWgt[which(is.na(Catch_df_2$CatchWgt))] <- 0
+
+# Plot
+Evhoe_plot <- ggplot(Catch_df_2)+
+  geom_point(aes(x=long,y=lati,col=CatchWgt))+
+  scale_color_distiller(palette="Spectral",trans="log10")+
+  facet_wrap(.~Year)+
+  geom_sf(data=mapBase)+
+  coord_sf(xlim = xlims, ylim = ylims, expand = FALSE)+
+  theme_bw()+
+  theme(axis.text.x = element_text(angle = 90),
+        plot.title = element_text(hjust = 0.5,face = "bold",size=14),
+        panel.spacing.x = unit(4, "mm"))+
+  ggtitle("Merluccius merluccius (EVHOE)",subtitle=" ")+
+  ylab("")+xlab("")
+
+```
+
+
+```{r,warning=F,echo=F,fig.align='center',out.width="70%"}
+
+plot(Evhoe_plot)
+
+```
+
+---
+
+\center
+
+\includegraphics[width=0.6\linewidth]{"images/co2.png"}
+
+---
+
+\frametitle{Data and ecological processes}
+
+
+\vspace{\baselineskip}
+
+What are the characteristics of these data?
+
+\medskip
+
+\onslide<2-4>{
+
+\begin{itemize}
+
+\item They arise from the ecological process of interest (= they are \textbf{conditionnal} on the ecological process)
+
+\item \textbf{Noisy} (= they are not perfect observations of the ecological process)
+
+\item \textbf{Sparse} (= they do not cover the full area and some hypothesis need to be set to predict the ecological process between the sampled locations)
+
+\end{itemize}
+
+}
+
+\vspace{\baselineskip}
+
+What are the characteristics of the ecological process we want to infer?
+
+\onslide<3-4>{
+
+\begin{itemize}
+
+\item \textbf{Hidden} or \textbf{latent}
+
+\item \textbf{Structured} (relations that structure the process?)
+
+\end{itemize}
+
+}
+
+\vspace{\baselineskip}
+
+How to relate the data to the ecological process?
+
+\vspace{\baselineskip}
+
+\onslide<4>{
+
+\begin{center}
+\ding{224} \textbf{Hierarchical modeling}
+\end{center}
+
+}
+
+---
+
+\frametitle{Hierarchical models}
+
+
+```{=tex}
+\begin{columns}
+\begin{column}{0.4\textwidth}
+
+Let's define observations $\textcolor{BaptisteLightGreen}{\boldsymbol{Y}}$:
+$$\textcolor{BaptisteLightGreen}{\boldsymbol{Y}} | \textcolor{BaptisteBlue}{\boldsymbol{S}}, \textcolor{red}{\boldsymbol{\theta}} \sim \mathcal{L}_Y(\textcolor{BaptisteBlue}{\boldsymbol{S}},\textcolor{red}{\boldsymbol{\theta}_{obs}})$$
+
+a latent field $\textcolor{BaptisteBlue}{\boldsymbol{S}}$:
+$$\textcolor{BaptisteBlue}{\boldsymbol{S}} | \textcolor{red}{\boldsymbol{\theta}_{process}} \sim \mathcal{L}_S(\textcolor{red}{\boldsymbol{\theta}_{process}})$$
+
+and parameters:
+$$\textcolor{red}{\boldsymbol{\theta}} = (\textcolor{red}{\boldsymbol{\theta}_{obs}},\textcolor{red}{\boldsymbol{\theta}_{process}})$$
+
+\vspace{\baselineskip}
+
+\scriptsize
+
+There can be several data sources $\textcolor{BaptisteLightGreen}{\boldsymbol{Y}_1}$ and $\textcolor{BaptisteLightGreen}{\boldsymbol{Y}_2}$, in which case each has its own probability distribution ($\mathcal{L}_{Y_1}$,$\mathcal{L}_{Y_2}$) and observation parameters ($\textcolor{red}{\boldsymbol{\theta}_{obs , 1}}$, $\textcolor{red}{\boldsymbol{\theta}_{obs , 2}}$).
+
+\end{column}
+\begin{column}{0.6\textwidth}
+
+\center{\includegraphics[width=0.9\columnwidth]{images/dag_ssm.png}}
+
+\end{column}
+\end{columns}
+```
+
+---
+
+\begin{center}
+\ding{224} \textbf{How to specify such model for space-time applications?}
+\end{center}
+
+\medskip
+
+\tableofcontents
+
+\medskip
+
+\pause
+\scriptsize
+
+Based on the package \href{https://github.com/James-Thorson-NOAA/VAST}{VAST} (Vector Autoregressive Spatio-Temporal) coded by Jim Torson (NOAA, Seattle)
+
+# Univariate spatio-temporal models
+
+\scriptsize
+
+Let's denote:
+
+\medskip
+
+\begin{columns}
+\begin{column}{0.5\textwidth}
+
+\begin{itemize}
+\item $\boldsymbol{Y} = (Y_i, i \in \{1, \cdots , n\})$ the observation vector
+
+\item $\boldsymbol{S} = (S_i, i \in \{1, \cdots , n\})$ the latent field vector
+
+\item $\boldsymbol{\delta} = (\delta_i, i \in \{1, \cdots , n\})$ the latent variables
+\end{itemize}
+\end{column}
+\begin{column}{0.5\textwidth}
+\begin{itemize}
+\item $\boldsymbol{\beta} = (\beta_j, j \in \{1, \cdots , p\})$ the parameter vector
+
+\item $\boldsymbol{X} _ {( n \times p )}$ the covariate matrix
+
+\item $f$ a link function.
+\end{itemize}
+\end{column}
+\end{columns}
+
+\normalsize
+
+\bigskip \bigskip
+
+$$Y | \boldsymbol{\delta}, \boldsymbol{\beta} \sim \mathcal{L}(\boldsymbol{S}, \sigma^2)$$
+
+$$f(\boldsymbol{S}) = \boldsymbol{X} \cdot \boldsymbol{\beta} + \boldsymbol{\delta}$$
+
+$$\boldsymbol{\delta} \sim \mathcal{MG}(0,\boldsymbol{\Sigma})$$
+
+\bigskip 
+
+\center
+The key element is the covariance matrix $\boldsymbol{\Sigma}_{(n \times n)}$
+
+---
+
+\large
+
+$$\boldsymbol{\Sigma} = \begin{pmatrix}
+Var[\delta_1] & Cov[\delta_1,\delta_2] & \cdots & Cov[\delta_1,\delta_n] \\ 
+Cov[\delta_2,\delta_1] & Var[\delta_2] & \ddots & \vdots \\
+\vdots & \ddots & \ddots & \vdots \\
+Cov[\delta_n,\delta_1] & \cdots & \cdots & Var[\delta_n] \\
+\end{pmatrix}$$
+
+\center
+
+\medskip
+
+\includegraphics[width=0.7\linewidth]{"images/domain.png"}
+
+---
+
+\center
+\ding{224} \textbf{The covariance is stationary (and isotropic)}
+\begin{align}
+Cov[\delta_i,\delta_j] = Cov[h_{ij}] \text{ with } h_{ij} \in \mathbb{R} \nonumber \\
+h_{ij} \text{ is the distance between i and j} \nonumber
+\end{align}
+
+
+\includegraphics[width=0.7\linewidth]{"images/altern_cov.png"}
+
+---
+
+\center
+\includegraphics[width=0.7\linewidth]{"images/covariogram.png"}
+
+---
+
+\frametitle{Moving to spatio-temporal}
+
+The ideas are similar, but we add temporal correlations in the expression of the random effect $\boldsymbol{\delta}$. \medskip
+
+\begin{center}
+\includegraphics[width=0.9\linewidth]{"images/st_maps.png"}
+\end{center}
+
+\vspace{\baselineskip}
+
+\scriptsize
+
+Let's introduce the model:
+
+$$\delta(x,t)=\varphi \cdot \delta(x,t-1) + \omega(x,t) \text{ for } t = 2,...,T$$
+
+- $\varphi \in ]-1;1[$ is the autoregressive temporal term
+
+- $\omega(x,t)$ is a purely spatial GRF
+
+- $\omega(x,1)$ derives from the stationary distribution $\mathcal{N}(0,\sigma^2 / (1 - \varphi ^ 2))$
+
+---
+
+\frametitle{How to infer such model?}
+
+\large
+
+Standard methods are not efficient.
+
+\bigskip
+
+The keystone is the likelihood:
+
+$$L_M(\textcolor{red}{\theta}) = P (\textcolor{BaptisteGreen}{Y} | \textcolor{red}{\theta}) = \int_{\mathbb{R}^{q}} P (\textcolor{BaptisteGreen}{Y}, \textcolor{BaptisteBlue}{\delta} | \textcolor{red}{\theta}) d\textcolor{BaptisteBlue}{\delta}$$
+
+
+\medskip
+
+\footnotesize
+
+$\textcolor{BaptisteGreen}{Y}$ are the observations, $\textcolor{red}{\theta}$ are the parameters, $\textcolor{BaptisteBlue}{\delta}$ are the latent variables.
+
+\normalsize
+
+\medskip
+
+\pause
+
+In a spatio-temporal context $q$ can be very high \smallskip
+
+\scriptsize 
+\quad  \quad \quad \ding{224} require efficient numerical methods (1) to bypass the integration step, 
+
+\quad \quad \quad \phantom{\ding{224}} (2) to reduce the dimensionality of $\textcolor{BaptisteBlue}{\delta}$ and (3) to derive efficiently the likelihood. 
+
+\normalsize
+
+\medskip
+
+\pause
+
+Three methods to enhance computing:
+
+- Laplace approximation (= approximation of the likelihood)
+
+- SPDE approach (= approximation of the Gaussian random effect)
+
+- Automatic differentiation (= efficient derivation technics)
+
+\medskip
+
+\footnotesize
+
+\pause
+
+\textbf{\underline{R package:}} `R-INLA` for bayesian inference (Rue et al., 2017) and `TMB` for maximum likelihood inference (Kristensen et al., 2015).
+
+---
+
+\begin{columns}
+\begin{column}{0.5\textwidth}
+
+\begin{center}
+\textbf{SPDE approach}
+\end{center}
+
+\end{column}
+\begin{column}{0.5\textwidth}
+
+\begin{center}
+\textbf{Laplace approximation}
+\end{center}
+
+\end{column}
+\end{columns}
+
+
+
+
+\begin{columns}
+\begin{column}{0.5\textwidth}
+
+\center
+
+\scriptsize 
+
+\textbf{\underline{First set of results}}
+
+\tiny
+
+\medskip
+
+A Gaussian field wih Matérn Covariance can be represented as a Gauss-Markov field \ding{224} sparse representation of the spatial effect
+
+\begin{center}
+\includegraphics[width=0.35\textwidth]{images/spde.png}
+\end{center}
+
+\scriptsize 
+
+\bigskip
+
+\textbf{\underline{Second set of results}}
+
+\tiny
+
+\only<1>{\includegraphics[width=0.75\textwidth]{images/spde1.png}}
+\only<2>{\includegraphics[width=0.75\textwidth]{images/spde2.png}}
+
+
+\end{column}
+\begin{column}{0.5\textwidth}
+
+\scriptsize \medskip
+
+\textbf{\underline{Conditions required:}}
+
+\begin{itemize}
+\item normality of the random effect $\delta$
+\item some regularity conditions on $f$ (\textit{e.g.} only one maximum)
+\end{itemize}
+
+\begin{center}
+
+\includegraphics[width=1\textwidth]{images/gaussian_laplace.png} \\
+\scriptsize
+\textbf{The true marginal (\textcolor{BaptisteBlue}{blue}), the Laplace approximation (\textcolor{red}{red}) and the Gaussian approximation (\textcolor{BaptisteOrange}{orange}).}
+
+\end{center}
+
+\end{column}
+\end{columns}
+
+
+# Multivariate spatio-temporal models
+
+test
+
+# Dimension reduction for spatio-temporal models
+
+test
+
+# Model inference
+
+test
+
+# Conclusion
+
+test
