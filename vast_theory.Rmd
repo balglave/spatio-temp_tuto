@@ -19,23 +19,10 @@ output:
 
 knitr::opts_chunk$set(echo = TRUE)
 
-library(corrplot)
 library(dplyr)
-library(fields)
-library(geoR)
 library(ggplot2)
-library(gstlearn)
-library(INLA)
 library(mapdata)
-library(maps)
-library(paletteer)
-library(plot.matrix)
 library(sf)
-library(sp)
-library(splancs)
-library(tidyr)
-
-run_simu <- F
 
 # Map
 mapBase <- map("worldHires", fill = T, plot = F)
@@ -44,21 +31,21 @@ grid_projection <- "+proj=longlat +datum=WGS84"
 
 ```
 
-
 # Introduction
 
 \frametitle{Some illustrations}
 
 \center
+
 \includegraphics[width=1\textwidth]{images/simu1.png}
 
----
+------------------------------------------------------------------------
 
 \center
+
 \includegraphics[width=1\textwidth]{images/simu2.png}
 
----
-
+------------------------------------------------------------------------
 
 ```{r,include=F,fig.align='center'}
 
@@ -76,7 +63,8 @@ ylims <- range(pretty(Haul_df$lati))
 # Catch data
 Catch_df <- Save_Datras$datras_sp.HL.full %>%
   group_by(Year,long,lati,StNo,HaulNo,scientificname) %>%
-  dplyr::summarise(CatchWgt = CatCatchWgt)
+  dplyr::summarise(CatchWgt = CatCatchWgt,
+                   TotNum = TotalNo)
 
 # Join with haul data to add missing hauls to catch data
 Catch_df_2 <- full_join(Catch_df,Haul_df) %>%
@@ -99,23 +87,21 @@ Evhoe_plot <- ggplot(Catch_df_2)+
 
 ```
 
-
 ```{r,warning=F,echo=F,fig.align='center',out.width="70%"}
 
 plot(Evhoe_plot)
 
 ```
 
----
+------------------------------------------------------------------------
 
 \center
 
 \includegraphics[width=0.6\linewidth]{"images/co2.png"}
 
----
+------------------------------------------------------------------------
 
 \frametitle{Data and ecological processes}
-
 
 \vspace{\baselineskip}
 
@@ -123,6 +109,7 @@ What are the characteristics of these data?
 
 \medskip
 
+```{=tex}
 \onslide<2-4>{
 
 \begin{itemize}
@@ -136,11 +123,12 @@ What are the characteristics of these data?
 \end{itemize}
 
 }
-
+```
 \vspace{\baselineskip}
 
 What are the characteristics of the ecological process we want to infer?
 
+```{=tex}
 \onslide<3-4>{
 
 \begin{itemize}
@@ -152,13 +140,14 @@ What are the characteristics of the ecological process we want to infer?
 \end{itemize}
 
 }
-
+```
 \vspace{\baselineskip}
 
 How to relate the data to the ecological process?
 
 \vspace{\baselineskip}
 
+```{=tex}
 \onslide<4>{
 
 \begin{center}
@@ -166,11 +155,11 @@ How to relate the data to the ecological process?
 \end{center}
 
 }
+```
 
----
+------------------------------------------------------------------------
 
 \frametitle{Hierarchical models}
-
 
 ```{=tex}
 \begin{columns}
@@ -200,21 +189,23 @@ There can be several data sources $\textcolor{BaptisteLightGreen}{\boldsymbol{Y}
 \end{columns}
 ```
 
----
+------------------------------------------------------------------------
 
+```{=tex}
 \begin{center}
 \ding{224} \textbf{How to specify such model for space-time applications?}
 \end{center}
-
+```
 \medskip
 
 \tableofcontents
 
 \medskip
 
+```{=tex}
 \pause
 \scriptsize
-
+```
 Based on the package \href{https://github.com/James-Thorson-NOAA/VAST}{VAST} (Vector Autoregressive Spatio-Temporal) coded by Jim Torson (NOAA, Seattle)
 
 # Univariate spatio-temporal models
@@ -225,6 +216,7 @@ Let's denote:
 
 \medskip
 
+```{=tex}
 \begin{columns}
 \begin{column}{0.5\textwidth}
 
@@ -246,7 +238,7 @@ Let's denote:
 \end{itemize}
 \end{column}
 \end{columns}
-
+```
 \normalsize
 
 \bigskip \bigskip
@@ -257,12 +249,13 @@ $$f(\boldsymbol{S}) = \boldsymbol{X} \cdot \boldsymbol{\beta} + \boldsymbol{\del
 
 $$\boldsymbol{\delta} \sim \mathcal{MG}(0,\boldsymbol{\Sigma})$$
 
-\bigskip 
+\bigskip
 
 \center
+
 The key element is the covariance matrix $\boldsymbol{\Sigma}_{(n \times n)}$
 
----
+------------------------------------------------------------------------
 
 \large
 
@@ -279,33 +272,49 @@ Cov[\delta_n,\delta_1] & \cdots & \cdots & Var[\delta_n] \\
 
 \includegraphics[width=0.7\linewidth]{"images/domain.png"}
 
----
+------------------------------------------------------------------------
 
 \center
-\ding{224} \textbf{The covariance is stationary (and isotropic)}
-\begin{align}
+
+\ding{224} \textbf{The covariance is stationary (and isotropic)} \begin{align}
 Cov[\delta_i,\delta_j] = Cov[h_{ij}] \text{ with } h_{ij} \in \mathbb{R} \nonumber \\
 h_{ij} \text{ is the distance between i and j} \nonumber
 \end{align}
 
-
 \includegraphics[width=0.7\linewidth]{"images/altern_cov.png"}
 
----
+\medskip
 
-\center
-\includegraphics[width=0.7\linewidth]{"images/covariogram.png"}
+\small
 
----
+We will denote $\delta_i$ as $\delta(x_i)$ in the following
+
+------------------------------------------------------------------------
+
+```{=tex}
+\begin{center}
+
+\includegraphics[width=0.7\textwidth]{images/lindgren1.png}
+
+\includegraphics[width=0.7\textwidth]{images/lindgren2.png}
+
+\end{center}
+```
+\tiny
+
+Lindgren, F., Rue, H., and Lindström, J. (2011). An explicit link between Gaussian fields and Gaussian Markov random fields: the stochastic partial differential equation approach. Journal of the Royal Statistical Society Series B: Statistical Methodology, 73(4), 423-498.
+
+------------------------------------------------------------------------
 
 \frametitle{Moving to spatio-temporal}
 
 The ideas are similar, but we add temporal correlations in the expression of the random effect $\boldsymbol{\delta}$. \medskip
 
+```{=tex}
 \begin{center}
 \includegraphics[width=0.9\linewidth]{"images/st_maps.png"}
 \end{center}
-
+```
 \vspace{\baselineskip}
 
 \scriptsize
@@ -314,13 +323,216 @@ Let's introduce the model:
 
 $$\delta(x,t)=\varphi \cdot \delta(x,t-1) + \omega(x,t) \text{ for } t = 2,...,T$$
 
-- $\varphi \in ]-1;1[$ is the autoregressive temporal term
+-   $\varphi \in ]-1;1[$ is the autoregressive temporal term
 
-- $\omega(x,t)$ is a purely spatial GRF
+-   $\omega(x,t)$ is a purely spatial GRF
 
-- $\omega(x,1)$ derives from the stationary distribution $\mathcal{N}(0,\sigma^2 / (1 - \varphi ^ 2))$
+-   $\omega(x,1)$ derives from the stationary distribution $\mathcal{N}(0,\sigma^2 / (1 - \varphi ^ 2))$
 
----
+------------------------------------------------------------------------
+
+```{=tex}
+\begin{columns}
+\begin{column}{0.65\textwidth}
+
+\begin{center}
+
+\includegraphics[width=0.9\textwidth]{images/seabass.png}
+
+\scriptsize
+
+Average monthly distribution of sea bass in the Bay of Biscay from 2008 to 2018
+
+\end{center}
+
+\end{column}
+\begin{column}{0.35\textwidth}
+
+\scriptsize
+
+Alglave Baptiste, Olmos et al. (\textit{under review}). Investigating fish adult phenology through Empirical Orthogonal Functions
+
+\end{column}
+\end{columns}
+```
+
+------------------------------------------------------------------------
+
+```{=tex}
+\begin{columns}
+\begin{column}{0.5\textwidth}
+
+\includegraphics[width=1\textwidth]{images/thorson1.png}
+
+\end{column}
+\begin{column}{0.5\textwidth}
+
+\scriptsize
+
+Thorson, J. T., Shelton, A. O., Ward, E. J., and Skaug, H. J. (2015). Geostatistical delta-generalized linear mixed models improve precision for estimated abundance indices for West Coast groundfishes. ICES Journal of Marine Science, 72(5), 1297-1310.
+
+\end{column}
+\end{columns}
+```
+# Multivariate spatio-temporal models
+
+\tableofcontents[currentsection]
+
+------------------------------------------------------------------------
+
+\frametitle{Multivariate modelling}
+
+Often, spatial data are multivariate
+
+\textit{e.g.} in survey data, several species are recorded in a single haul.
+
+\quad \textbf{\ding{224} How to extract the common patterns between these species?}
+
+```{r,include=F,fig.align='center'}
+
+Catch_df_3 <- full_join(Catch_df,Haul_df) %>%
+  filter(scientificname %in% c("Merluccius_merluccius","Lepidorhombus_whiffiagonis","Micromesistius_poutassou","Trachurus_trachurus","Lophius_piscatorius","Lophius_budegassa"))
+
+# Plot
+Evhoe_multi_plot <- ggplot(Catch_df_3)+
+  geom_point(aes(x=long,y=lati,col=TotNum))+
+  scale_color_distiller(palette="Spectral",trans="log10")+
+  facet_wrap(.~scientificname)+
+  geom_sf(data=mapBase)+
+  coord_sf(xlim = xlims, ylim = ylims, expand = FALSE)+
+  theme_bw()+
+  theme(axis.text.x = element_text(angle = 90),
+        plot.title = element_text(hjust = 0.5,face = "bold",size=14),
+        panel.spacing.x = unit(4, "mm"))+
+  ggtitle("Some important species of the EVHOE survey")+
+  ylab("")+xlab("")
+
+```
+
+```{r,warning=F,echo=F,fig.align='center',out.width="65%"}
+
+plot(Evhoe_multi_plot)
+
+```
+
+------------------------------------------------------------------------
+
+\frametitle{How to model jointly these species?}
+
+\large
+
+Let's now denote $\boldsymbol{S}_{(n \times l)}$ the matrix of observations of species in $n$ locations for $l$ species.
+
+$$\log(\boldsymbol{S}_{i,\cdot})=\boldsymbol{X} \cdot \boldsymbol{\beta} + \boldsymbol{L} \boldsymbol{\Delta}^T_{i,\cdot}$$
+
+\bigskip
+
+$\rightarrow \log(\boldsymbol{S}_{i,\cdot})$ is the log-expected densities for all species $l$ at locations $i \in \{1,\cdots, n\}$. \bigskip
+
+$\rightarrow \boldsymbol{X} \cdot \boldsymbol{\beta}$ is the trend part. \bigskip
+
+$\rightarrow \boldsymbol{L} \boldsymbol{\Delta}^T_{i,\cdot}$ is the part of the model that controls species (or variables) interaction.
+
+\bigskip
+
+\center
+
+\ding{224} How is it parameterized?
+
+------------------------------------------------------------------------
+
+\frametitle{How to model jointly these species?}
+
+$\boldsymbol{\Delta}_{(l \times k)}$ is the matrix containing the spatial factors. $\boldsymbol{L}_{(l,k)}$ contains the loading factors. \bigskip
+
+\underline{\textbf{Latent variables ($\boldsymbol{\Delta}$):}} \medskip
+
+$\boldsymbol{\Delta}^T_{i,\cdot}$ is the value of $\boldsymbol{\Delta}$ for all spatial factor $k$ at location $i$. $\Delta$ is a matrix where each column represents one of the spatial factor. Each latent variable $\boldsymbol{\delta}_j$ is parameterized as a GRF. \medskip
+
+$$\boldsymbol{\Delta} = (\boldsymbol{\delta}_1,\boldsymbol{\delta}_2,\cdots,\boldsymbol{\delta}_k) \text{   where    } \boldsymbol{\delta}_j \sim \mathcal{MG}(0,\boldsymbol\Sigma)$$
+
+\bigskip
+
+\underline{\textbf{Loading factors ($\boldsymbol{L}$):}} \medskip
+
+The loadings are contained in $\boldsymbol{L}_{(l,k)}$. It represents the linear relationship between the latent variables in $\boldsymbol{\Delta}$ and the log-expected intensity $\log(\boldsymbol{S})$. \medskip
+
+\scriptsize
+
+$$
+\mathbf{L}=\left[\begin{array}{cccc}
+l_{1,1} & 0 & \ldots & 0 \\
+l_{2,1} & l_{2,2} & \ldots & 0 \\
+l_{3,1} & l_{3,2} & \ldots & 0 \\
+\ldots & \ldots & \ldots & \ldots \\
+l_{l, 1} & l_{l, 2} & \ldots & l_{l, k}
+\end{array}\right]
+$$
+
+------------------------------------------------------------------------
+
+\includegraphics[width=0.925\textwidth]{images/thorson345.png}
+
+\medskip
+
+\tiny
+
+Thorson, J. T., Scheuerell, M. D., Shelton, A. O., See, K. E., Skaug, H. J., & Kristensen, K. (2015). Spatial factor analysis: a new tool for estimating joint species distributions and correlations in species range. Methods in Ecology and Evolution, 6(6), 627-637.
+
+------------------------------------------------------------------------
+
+\frametitle{How to model jointly these species?}
+
+<!-- \large -->
+
+The interpretation of $\Delta$ is complicated because $\boldsymbol{L}$ is triangular inferior to ensure identifiability (something pretty common in dynamic factor analysis). \bigskip
+
+Interpretation can be simplified by rotating the loading factors and the spatial factors.
+
+\bigskip
+
+$$
+\begin{aligned}
+& \boldsymbol{\Delta}^{\prime}=\boldsymbol{H} \Delta \\
+& \boldsymbol{L}^{\prime}=\boldsymbol{L H}^{-1}
+\end{aligned}
+$$
+
+\bigskip
+
+$H$ can be computed in several ways.
+
+-   through standard diagonalization ($\equiv$ EOF/PCA)
+
+-   Varimax rotation $\rightarrow$ pushing the spatial factors towards $0$ or $\pm 1$.
+
+-   Quartimin rotation $\rightarrow$ same but drop constraints of orthogonality.
+
+\medskip
+
+The last two are used to minimize the number of factors needed to explain $\boldsymbol{\Delta}$
+
+------------------------------------------------------------------------
+
+\frametitle{How to model jointly these species?}
+
+The last point is the covariance among species / variables.
+
+$$Cov[\Delta_{(\cdot,j)},\Delta_{(\cdot,j')}] = \sum^k_{p=m} l_{j m} l_{j^{\prime} m}$$
+
+$$Cor[\Delta_{(\cdot,j)},\Delta_{(\cdot,j')}] = \frac{\sum^k_{m=1} l_{j m} l_{j^{\prime} m}}{\sqrt{\sum^k_{m=1} l_{j m}^2} \sqrt{\sum^k_{m=1} l_{j^{\prime} m}^2}}$$
+
+\medskip
+
+\center
+
+\includegraphics[width=0.35\textwidth]{images/thorson6.png}
+
+# Model inference
+
+\tableofcontents[currentsection]
+
+------------------------------------------------------------------------
 
 \frametitle{How to infer such model?}
 
@@ -332,14 +544,13 @@ Standard methods are not efficient.
 
 The keystone is the likelihood:
 
-$$L_M(\textcolor{red}{\theta}) = P (\textcolor{BaptisteGreen}{Y} | \textcolor{red}{\theta}) = \int_{\mathbb{R}^{q}} P (\textcolor{BaptisteGreen}{Y}, \textcolor{BaptisteBlue}{\delta} | \textcolor{red}{\theta}) d\textcolor{BaptisteBlue}{\delta}$$
-
+$$L_M(\textcolor{red}{\boldsymbol{\theta}}) = P (\textcolor{BaptisteGreen}{\boldsymbol{Y}} | \textcolor{red}{\boldsymbol{\theta}}) = \int_{\mathbb{R}^{q}} P (\textcolor{BaptisteGreen}{\boldsymbol{Y}}, \textcolor{BaptisteBlue}{\boldsymbol{\delta}} | \textcolor{red}{\boldsymbol{\theta}}) d\textcolor{BaptisteBlue}{\boldsymbol{\delta}}$$
 
 \medskip
 
 \footnotesize
 
-$\textcolor{BaptisteGreen}{Y}$ are the observations, $\textcolor{red}{\theta}$ are the parameters, $\textcolor{BaptisteBlue}{\delta}$ are the latent variables.
+$\textcolor{BaptisteGreen}{\boldsymbol{Y}}$ are the observations, $\textcolor{red}{\boldsymbol{\theta}}$ are the parameters, $\textcolor{BaptisteBlue}{\boldsymbol{\delta}}$ are the latent random variables.
 
 \normalsize
 
@@ -349,10 +560,11 @@ $\textcolor{BaptisteGreen}{Y}$ are the observations, $\textcolor{red}{\theta}$ a
 
 In a spatio-temporal context $q$ can be very high \smallskip
 
-\scriptsize 
-\quad  \quad \quad \ding{224} require efficient numerical methods (1) to bypass the integration step, 
+\scriptsize
 
-\quad \quad \quad \phantom{\ding{224}} (2) to reduce the dimensionality of $\textcolor{BaptisteBlue}{\delta}$ and (3) to derive efficiently the likelihood. 
+\quad  \quad \quad \ding{224} require efficient numerical methods (1) to bypass the integration step,
+
+\quad \quad \quad \phantom{\ding{224}} (2) to reduce the dimensionality of $\textcolor{BaptisteBlue}{\boldsymbol{\delta}}$ and (3) to derive efficiently the likelihood.
 
 \normalsize
 
@@ -362,11 +574,11 @@ In a spatio-temporal context $q$ can be very high \smallskip
 
 Three methods to enhance computing:
 
-- Laplace approximation (= approximation of the likelihood)
+-   Laplace approximation (= approximation of the likelihood)
 
-- SPDE approach (= approximation of the Gaussian random effect)
+-   SPDE approach (= approximation of the Gaussian random effect)
 
-- Automatic differentiation (= efficient derivation technics)
+-   Automatic differentiation (= efficient derivation technics)
 
 \medskip
 
@@ -376,8 +588,9 @@ Three methods to enhance computing:
 
 \textbf{\underline{R package:}} `R-INLA` for bayesian inference (Rue et al., 2017) and `TMB` for maximum likelihood inference (Kristensen et al., 2015).
 
----
+------------------------------------------------------------------------
 
+```{=tex}
 \begin{columns}
 \begin{column}{0.5\textwidth}
 
@@ -394,10 +607,8 @@ Three methods to enhance computing:
 
 \end{column}
 \end{columns}
-
-
-
-
+```
+```{=tex}
 \begin{columns}
 \begin{column}{0.5\textwidth}
 
@@ -419,14 +630,12 @@ A Gaussian field wih Matérn Covariance can be represented as a Gauss-Markov fie
 
 \scriptsize 
 
-\bigskip
-
 \textbf{\underline{Second set of results}}
 
 \tiny
 
-\only<1>{\includegraphics[width=0.75\textwidth]{images/spde1.png}}
-\only<2>{\includegraphics[width=0.75\textwidth]{images/spde2.png}}
+\includegraphics[width=0.65\textwidth]{images/spde1.png}
+\includegraphics[width=0.65\textwidth]{images/spde2.png}
 
 
 \end{column}
@@ -451,20 +660,135 @@ A Gaussian field wih Matérn Covariance can be represented as a Gauss-Markov fie
 
 \end{column}
 \end{columns}
+```
+# Towards more complex methods
+
+\tableofcontents[currentsection]
+
+------------------------------------------------------------------------
+
+\frametitle{Towards more complex methods}
+
+\medskip
+
+-   Modelling population dynamics \medskip
+
+-   Modelling movement \medskip
+
+In both cases, this becomes a state space model where:
+
+$$S(t,s)=g\left(S(t-1,s)\right) \cdot e^{\varepsilon(t,s)}$$
+
+where: \medskip
+
+\quad ${\varepsilon}(t,s) \sim \mathcal{MN}(0,\boldsymbol{\Sigma})$, \medskip
+
+\quad $g:\mathbb{R}^L \rightarrow \mathbb{R}^L$ the function modeling population dynamics or movement. \medskip
+
+\begin{center}
+\includegraphics[width=0.4\textwidth]{images/state_space.png}
+\end{center}
 
 
-# Multivariate spatio-temporal models
+------------------------------------------------------------------------
 
-test
+\frametitle{Modelling population dynamics}
 
-# Dimension reduction for spatio-temporal models
+\center
 
-test
+\only<1>{\includegraphics[width=0.85\textwidth]{images/hierarchical_model1.png}}
 
-# Model inference
+\only<2>{\includegraphics[width=0.85\textwidth]{images/hierarchical_model2.png}}
 
-test
+\only<3>{\includegraphics[width=0.85\textwidth]{images/hierarchical_model3.png}}
 
-# Conclusion
+\only<4>{\includegraphics[width=0.85\textwidth]{images/hierarchical_model4.png}}
 
-test
+\only<5>{\includegraphics[width=0.85\textwidth]{images/hierarchical_model5.png}}
+
+\only<6>{\includegraphics[width=0.85\textwidth]{images/hierarchical_model6.png}}
+
+------------------------------------------------------------------------
+
+\center
+
+\includegraphics[width=1\textwidth]{images/spatial_dyn.png}
+
+------------------------------------------------------------------------
+
+\frametitle{Modelling movement}
+
+\large
+
+Movement will be modelled by a matrix $\mathbf{M}^*_{(n\times n)}$ that is instantaneous movement rate. $\mathbf{M}^*$ is used to model movement from one time step $t$ to another. \bigskip
+
+$\mathbf{M}$ is a combination of 3 matrices:
+
+$$\mathbf{M}^* = \mathbf{D}^* + \mathbf{Z}^* + \mathbf{V}^*$$
+
+\medskip
+
+where $\mathbf{D}^*$ is \underline{diffusion}, $\mathbf{Z}^*$ is \underline{preference towards a specific habitat}, $\mathbf{V}^*$ is \underline{advection}. \medskip
+
+\bigskip
+
+Then to get the movement matrix $\mathbf{M}(t) = \exp (\mathbf{M}^* \cdot \Delta t)$, where $\Delta t$ is the duration of the interval
+starting at time $t$. \medskip
+
+All columns of $\mathbf{M}(t)$ sum to 1.
+
+------------------------------------------------------------------------
+
+\begin{center}
+\includegraphics[width=0.85\textwidth]{images/movement.png}
+\end{center}
+
+\tiny
+
+Thorson, J. T., Barbeaux, S. J., Goethel, D. R., Kearney, K. A., Laman, E. A., Nielsen, J. K., ... & Thompson, G. G. (2021). Estimating fine‐scale movement rates and habitat preferences using multiple data sources. Fish and Fisheries, 22(6), 1359-1376.
+
+------------------------------------------------------------------------
+
+\frametitle{Take home message}
+
+\large
+
+\textbf{Main ideas:} \medskip
+
+-   \underline{hierarchical} modelling (not geostatistics per se)
+
+\medskip
+
+-   spatial/temporal \underline{correlation}
+
+\medskip
+
+-   multivariate analysis \medskip
+
+\quad \ding{224} extract \underline{structuring/shared patterns}, and their variation in time \medskip
+
+\quad \ding{224} quantify \underline{correlation among species/variables}
+
+\bigskip
+
+\center
+
+\textbf{Many applications in ecology (and other fields)} \medskip
+
+\textbf{Many statistical developments too} \medskip
+
+\textbf{But may require new inference methods...} \medskip
+
+------------------------------------------------------------------------
+
+\Large
+
+\center
+
+\textbf{Appendices}
+
+------------------------------------------------------------------------
+
+\center
+
+\includegraphics[width=0.7\linewidth]{"images/covariogram.png"}

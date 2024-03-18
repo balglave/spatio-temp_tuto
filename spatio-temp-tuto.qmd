@@ -1,0 +1,353 @@
+---
+title: "Mutivariate analysis for spatio-temporal data"
+format: html
+editor: visual
+---
+
+# Bering Sea case study
+
+## Load toy example for ordination
+
+```{r,include=F,echo=F}
+
+# Load packages
+library(tidyr)
+library(dplyr)
+library(ggplot2)
+library(mapdata)
+library(rnaturalearth)
+library(rnaturalearthdata)
+library(sf)
+library(sp)
+library(VAST)
+
+# Map
+world <- ne_countries(scale = "medium", returnclass = "sf")
+
+species_to_select <- c("Merluccius_merluccius","Lepidorhombus_whiffiagonis","Micromesistius_poutassou","Trachurus_trachurus","Lophius_piscatorius","Lophius_budegassa")
+
+```
+
+```{r,warning=F}
+
+# load data set
+example = load_example( data_set="ordination" )
+
+```
+
+## Configure models with the function `make_settings`
+
+```{r}
+
+# Make settings:
+# including modifications from default settings to match 
+# analysis in original paper
+settings = make_settings( n_x=50,
+  Region=example$Region,
+  purpose="EOF3",
+  n_categories=2,
+  ObsModel=c(1,1),
+  RhoConfig=c("Beta1"=0,"Beta2"=0,"Epsilon1"=0,"Epsilon2"=0) )
+
+help(make_settings)
+
+```
+
+## Fit the model
+
+```{r,eval=F}
+
+# Run model (including settings to speed up run)
+fit = fit_model( settings=settings,
+  Lat_i=example$sampling_data[,'Lat'],
+  Lon_i=example$sampling_data[,'Lon'],
+  t_i=example$sampling_data[,'Year'],
+  c_i=example$sampling_data[,'species_number']-1,
+  b_i=example$sampling_data[,'Catch_KG'],
+  a_i=example$sampling_data[,'AreaSwept_km2'],
+  newtonsteps=0,
+  Use_REML=TRUE )
+
+```
+
+```{r,echo=F}
+
+load("res/fit.RData")
+
+```
+
+## Plot the results
+
+```{r,eval=F}
+
+# Plot results, including spatial term Omega1
+results = plot( fit,
+                check_residuals=FALSE,
+                plot_set=c(3,16),
+                category_names = c("pollock", "cod", "arrowtooth", "snow_crab", "yellowfin") )
+
+```
+
+```{r,echo=F}
+
+load("res/results.RData")
+
+```
+
+## Plot maps
+
+Spatial Factor maps are in `results$Factors$Rotated_projected_factors`.
+
+```{r,fig.align='center',fig.asp=1,echo=F}
+
+grid <- fit$extrapolation_list$Data_Extrap
+Map_dim1 <- data.frame(grid,
+                       dim = results$Factors$Rotated_projected_factors$EpsilonTime1[,,1]) %>% 
+  pivot_longer(dim.1:dim.5)
+
+Map_dim1_plot <- ggplot(Map_dim1)+
+  geom_point(aes(x=Lon,y=Lat,col=value))+
+  facet_wrap(.~name)+
+  scale_color_distiller(palette = "Spectral")+
+  theme_bw()
+
+Map_dim2 <- data.frame(grid,
+                       dim = results$Factors$Rotated_projected_factors$EpsilonTime1[,,2]) %>% 
+  pivot_longer(dim.1:dim.5)
+
+Map_dim2_plot <- ggplot(Map_dim2)+
+  geom_point(aes(x=Lon,y=Lat,col=value))+
+  facet_wrap(.~name)+
+  scale_color_distiller(palette = "Spectral")+
+  theme_bw()
+
+plot_maps <- cowplot::plot_grid(Map_dim1_plot,Map_dim2_plot,ncol = 1)
+
+plot(plot_maps)
+
+```
+
+## Plot time loadings
+
+```{r,fig.align='center',fig.asp=1/2,echo=F}
+
+time_df <- data.frame(date=as.numeric(fit$year_labels),dim=results$Factors$Rotated_loadings$EpsilonTime1) %>% 
+  pivot_longer(dim.1:dim.2)
+time_plot <- ggplot(time_df)+
+  geom_line(aes(x=date,y=value,col=name))+
+  theme_bw()+
+  scale_color_manual(values = c("blue","black"))+
+  xlab("Year")+ylab("Index")
+
+plot(time_plot)
+
+```
+
+## Comparing loadings to environmental variables
+
+```{r,fig.align='center',fig.asp=1/2,echo=F}
+
+# Load Cold-pool-extent
+example2 = load_example( data_set="EBS_pollock" )
+CPE = example2$covariate_data[match(fit$year_labels,example2$covariate_data$Year),'AREA_SUM_KM2_LTE2']
+
+# Plot against cold-pool extent index
+index2 = results$Factors$Rotated_loadings$EpsilonTime1[,2]
+index2 = sign(cor(index2,CPE)) * index2
+matplot( x=fit$year_labels, y=scale(cbind(CPE,index2)),
+         type="l", lty="solid", col=c("blue","black"), lwd=2, ylab="Index", xlab="Year" )
+legend( "bottom", ncol=2, fill=c("blue","black"), legend=c("CPE","factor-2"), bty="n")
+
+```
+
+# Bay of Biscay case study
+
+## Load EVHOE data
+
+```{r}
+
+# EVHOE data
+load("data/EVHOE_2008_2019.RData")
+
+# Grid data
+load("data/gridpolygon_sf.RData")
+gridpolygon_sp <- sf::as_Spatial(gridpolygon_sf)
+
+```
+
+```{r,include=F}
+
+# Haul data
+Haul_df <- Save_Datras$datras_HH.full %>%
+  dplyr::select(Year,long,lati,StNo,HaulNo,Depth) %>% 
+  filter(lati < 48 & long > -6)
+
+# Extent of the EVHOE domain
+xlims <- range(pretty(Haul_df$long))
+ylims <- range(pretty(Haul_df$lati))
+
+# Catch data
+Catch_df <- Save_Datras$datras_sp.HL.full %>%
+  group_by(Year,long,lati,StNo,HaulNo,scientificname) %>%
+  dplyr::summarise(CatchWgt = CatCatchWgt,
+                   TotNum = TotalNo) %>% 
+  filter(lati < 48 & long > -6)
+
+
+# Join with haul data to add missing hauls to catch data
+Catch_df_2 <- full_join(Catch_df,Haul_df) %>%
+  filter(scientificname == "Merluccius_merluccius")
+Catch_df_2$CatchWgt[which(is.na(Catch_df_2$CatchWgt))] <- 0
+
+# Plot
+Evhoe_plot <- ggplot(Catch_df_2)+
+  geom_point(aes(x=long,y=lati,col=CatchWgt))+
+  scale_color_distiller(palette="Spectral",trans="log10")+
+  facet_wrap(.~Year)+
+  geom_sf(data=world)+
+  coord_sf(xlim = xlims, ylim = ylims, expand = FALSE)+
+  theme_bw()+
+  theme(axis.text.x = element_text(angle = 90),
+        plot.title = element_text(hjust = 0.5,face = "bold",size=14),
+        panel.spacing.x = unit(4, "mm"))+
+  ggtitle("Merluccius merluccius (EVHOE)",subtitle=" ")+
+  ylab("")+xlab("")
+
+```
+
+```{r,warning=F,echo=F,fig.align='center'}
+
+plot(Evhoe_plot)
+
+```
+
+## Filter some species of interest
+
+```{r,include=F,fig.align='center'}
+
+Catch_df_3 <- full_join(Haul_df,Catch_df) %>%
+  filter(scientificname %in% species_to_select)
+
+# Plot
+Evhoe_multi_plot <- ggplot(Catch_df_3)+
+  geom_point(aes(x=long,y=lati,col=TotNum))+
+  scale_color_distiller(palette="Spectral",trans="log10")+
+  facet_wrap(.~scientificname)+
+  geom_sf(data=world)+
+  coord_sf(xlim = xlims, ylim = ylims, expand = FALSE)+
+  theme_bw()+
+  theme(axis.text.x = element_text(angle = 90),
+        plot.title = element_text(hjust = 0.5,face = "bold",size=14),
+        panel.spacing.x = unit(4, "mm"))+
+  ggtitle("Some important species of the EVHOE survey")+
+  ylab("")+xlab("")
+
+```
+
+```{r,warning=F,echo=F,fig.align='center'}
+
+plot(Evhoe_multi_plot)
+
+```
+
+## Prepare data with `make_settings`
+
+```{r}
+
+
+Catch_df_4 <- Catch_df_3 %>% 
+  pivot_wider(names_from = scientificname,values_from = CatchWgt,values_fn = mean) %>% 
+  as.data.frame()
+
+Catch_df_6 <- Catch_df_5 <- Catch_df_4
+Catch_df_5$spp <- NA
+Catch_df_5$catch <- NA
+for(spp_i in species_to_select){
+  
+  print(spp_i)
+  test <- Catch_df_4[,spp_i]
+  Catch_df_5$spp <- rep(spp_i,length(test))
+  Catch_df_5$catch <- test
+  
+  if(spp_i == species_to_select[1]){
+  
+      Catch_df_6 <- Catch_df_5
+        
+  }
+  
+  if(spp_i != species_to_select[1]){
+    
+    Catch_df_6 <- rbind(Catch_df_5,Catch_df_6)
+    
+  } 
+  
+}
+
+# Make settings:
+# including modifications from default settings to match 
+# analysis in original paper
+settings = make_settings( n_x=100,
+  Region="user",
+  # Region="EVHOE",
+  purpose="EOF3",
+  n_categories=2,
+  ObsModel=c(2,1),
+  RhoConfig=c("Beta1"=3,"Beta2"=3,"Epsilon1"=0,"Epsilon2"=0),
+  use_anisotropy=FALSE)
+
+```
+
+## Fit the model
+
+```{r,eval=F}
+
+c_i_vec <- as.numeric(as.factor(Catch_df_6$spp))
+
+colnames(Catch_df_6)[2] <- "Lon"
+colnames(Catch_df_6)[3] <- "Lat"
+
+Catch_df_6$catch[which(is.na(Catch_df_6$catch))] <- 0
+
+gridpolygon_sp@data$Lon <- coordinates(gridpolygon_sp)[,1]
+gridpolygon_sp@data$Lat <- coordinates(gridpolygon_sp)[,2]
+gridpolygon_sp@data$Area_km2 <- rep(1,length(gridpolygon_sp@data$Lat))
+
+# Run model (including settings to speed up run)
+fit = fit_model( settings=settings,
+  Lat_i=Catch_df_6[,"Lat"],
+  Lon_i=Catch_df_6[,"Lon"],
+  observations_LL = Catch_df_6[,c("Lat","Lon")],
+  t_i=Catch_df_6$Year,
+  c_i=c_i_vec-1,
+  b_i=Catch_df_6$catch,
+  a_i= rep(as_units(1, "kg"),nrow(Catch_df_6)),
+  newtonsteps=0,REML=T,
+  input_grid = gridpolygon_sp@data)
+
+```
+
+```{r,echo=F,eval=F}
+
+
+load("res/fit_bob.RData")
+results = plot( fit,
+                check_residuals=FALSE,
+                plot_set=c(3,16))
+
+```
+
+**Exercice:**
+
+- Plot spatial factors and temporal loadings
+
+- Modify the species to make something ecologically relevant
+
+- Change the type of rotation between the spatial factors using the function `plot_factors` (below is a reference to understand how the rotations work)
+
+Hannachi, A., Jolliffe, I. T., & Stephenson, D. B. (2007). Empirical orthogonal functions and related techniques in atmospheric science: A review. International Journal of Climatology: A Journal of the Royal Meteorological Society, 27(9), 1119-1152.
+
+- Modify the observation model (type `?make_data`))
+
+- Dig in the codes of VAST and explain the overall structure of the model (`https://github.com/James-Thorson-NOAA/VAST/tree/main/inst/executables`) - if anyone want to recode it from scratch ;)
+
+Another toy example is available in `https://github.com/James-Thorson-NOAA/VAST/wiki/Ordination` for computing correlation among species.
