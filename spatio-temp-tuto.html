@@ -293,18 +293,23 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb9-21"><a href="#cb9-21" aria-hidden="true" tabindex="-1"></a>  <span class="at">newtonsteps=</span><span class="dv">0</span>,<span class="at">REML=</span>T,</span>
 <span id="cb9-22"><a href="#cb9-22" aria-hidden="true" tabindex="-1"></a>  <span class="at">input_grid =</span> gridpolygon_sp<span class="sc">@</span>data)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>results <span class="ot">=</span> <span class="fu">plot</span>( fit,</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>                <span class="at">check_residuals=</span><span class="cn">FALSE</span>,</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>                <span class="at">plot_set=</span><span class="fu">c</span>(<span class="dv">3</span>,<span class="dv">16</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
 <p><strong>Exercice:</strong></p>
 <ul>
-<li><p>Plot spatial factors and temporal loadings</p></li>
-<li><p>Modify the species to make something ecologically relevant</p></li>
+<li><p>Plot spatial factors and temporal loadings forthe Bay of Biscay case study.</p></li>
+<li><p>Modify the species to make something ecologically relevant.</p></li>
 <li><p>Change the type of rotation between the spatial factors using the function <code>plot_factors</code> (below is a reference to understand how the rotations work)</p></li>
 </ul>
 <p>Hannachi, A., Jolliffe, I. T., &amp; Stephenson, D. B. (2007). Empirical orthogonal functions and related techniques in atmospheric science: A review. International Journal of Climatology: A Journal of the Royal Meteorological Society, 27(9), 1119-1152.</p>
 <ul>
-<li><p>Modify the observation model (type <code>?make_data</code> and find the different possibilities)</p></li>
+<li><p>Modify the observation model (type <code>?make_data</code>)).</p></li>
 <li><p>Dig in the codes of VAST and explain the overall structure of the model (<code>https://github.com/James-Thorson-NOAA/VAST/tree/main/inst/executables</code>) - if anyone want to recode it from scratch ;)</p></li>
 </ul>
-<p>Another toy example is available in <code>https://github.com/James-Thorson-NOAA/VAST/wiki/Ordination</code> for computing correlation among species</p>
+<p>Another toy example is available in <code>https://github.com/James-Thorson-NOAA/VAST/wiki/Ordination</code> for computing correlation among species.</p>
 </section>
 </section>
 

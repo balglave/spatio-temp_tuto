@@ -72,7 +72,27 @@ fit = fit_model( settings=settings,
 
 ```{r,echo=F}
 
-load("res/fit.RData")
+if(file.exists("res/fit.RData")){
+  
+  load("res/fit.RData")
+
+}else{
+  
+  # Run model (including settings to speed up run)
+  fit = fit_model( settings=settings,
+                   Lat_i=example$sampling_data[,'Lat'],
+                   Lon_i=example$sampling_data[,'Lon'],
+                   t_i=example$sampling_data[,'Year'],
+                   c_i=example$sampling_data[,'species_number']-1,
+                   b_i=example$sampling_data[,'Catch_KG'],
+                   a_i=example$sampling_data[,'AreaSwept_km2'],
+                   newtonsteps=0,
+                   Use_REML=TRUE )
+  
+  save(data=fit,file="res/fit.RData")
+  
+}
+
 
 ```
 
@@ -90,7 +110,21 @@ results = plot( fit,
 
 ```{r,echo=F}
 
-load("res/results.RData")
+if(file.exists("res/results.RData")){
+  
+  load("res/results.RData")
+  
+}else{
+  
+  results = plot( fit,
+                check_residuals=FALSE,
+                plot_set=c(3,16),
+                category_names = c("pollock", "cod", "arrowtooth", "snow_crab", "yellowfin") )
+
+  save(data=results,file="res/results.RData")
+  
+}
+
 
 ```
 
@@ -326,27 +360,53 @@ fit = fit_model( settings=settings,
 
 ```
 
-```{r,echo=F,eval=F}
+```{r,echo=F}
+
+if(file.exists("res/fit_bob.RData")){
+  
+  load("res/fit_bob.RData")
+  
+}else{
+  
+  fit = fit_model( settings=settings,
+                   Lat_i=Catch_df_6[,"Lat"],
+                   Lon_i=Catch_df_6[,"Lon"],
+                   observations_LL = Catch_df_6[,c("Lat","Lon")],
+                   t_i=Catch_df_6$Year,
+                   c_i=c_i_vec-1,
+                   b_i=Catch_df_6$catch,
+                   a_i= rep(as_units(1, "kg"),nrow(Catch_df_6)),
+                   newtonsteps=0,REML=T,
+                   input_grid = gridpolygon_sp@data)
+  
+  
+  save(data=fit,file="res/fit_bob.RData")
+
+}
 
 
-load("res/fit_bob.RData")
+```
+
+```{r,eval=F}
+
 results = plot( fit,
                 check_residuals=FALSE,
                 plot_set=c(3,16))
 
 ```
 
+
 **Exercice:**
 
-- Plot spatial factors and temporal loadings
+- Plot spatial factors and temporal loadings forthe Bay of Biscay case study.
 
-- Modify the species to make something ecologically relevant
+- Modify the species to make something ecologically relevant.
 
 - Change the type of rotation between the spatial factors using the function `plot_factors` (below is a reference to understand how the rotations work)
 
 Hannachi, A., Jolliffe, I. T., & Stephenson, D. B. (2007). Empirical orthogonal functions and related techniques in atmospheric science: A review. International Journal of Climatology: A Journal of the Royal Meteorological Society, 27(9), 1119-1152.
 
-- Modify the observation model (type `?make_data`))
+- Modify the observation model (type `?make_data`)).
 
 - Dig in the codes of VAST and explain the overall structure of the model (`https://github.com/James-Thorson-NOAA/VAST/tree/main/inst/executables`) - if anyone want to recode it from scratch ;)
 
