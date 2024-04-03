@@ -4,6 +4,8 @@ format: html
 editor: visual
 ---
 
+Here is the link of the gith repos: `https://github.com/balglave/spatio-temp_tuto.git`
+
 # Bering Sea case study
 
 ## Load toy example for ordination
@@ -136,8 +138,8 @@ Spatial Factor maps are in `results$Factors$Rotated_projected_factors`.
 
 grid <- fit$extrapolation_list$Data_Extrap
 Map_dim1 <- data.frame(grid,
-                       dim = results$Factors$Rotated_projected_factors$EpsilonTime1[,,1]) %>% 
-  pivot_longer(dim.1:dim.5)
+                       esp = results$Factors$Rotated_projected_factors$EpsilonTime1[,,1]) %>% 
+  pivot_longer(esp.1:esp.5)
 
 Map_dim1_plot <- ggplot(Map_dim1)+
   geom_point(aes(x=Lon,y=Lat,col=value))+
@@ -146,8 +148,8 @@ Map_dim1_plot <- ggplot(Map_dim1)+
   theme_bw()
 
 Map_dim2 <- data.frame(grid,
-                       dim = results$Factors$Rotated_projected_factors$EpsilonTime1[,,2]) %>% 
-  pivot_longer(dim.1:dim.5)
+                       esp = results$Factors$Rotated_projected_factors$EpsilonTime1[,,2]) %>% 
+  pivot_longer(esp.1:esp.5)
 
 Map_dim2_plot <- ggplot(Map_dim2)+
   geom_point(aes(x=Lon,y=Lat,col=value))+
@@ -259,8 +261,9 @@ plot(Evhoe_plot)
 
 ```{r,include=F,fig.align='center'}
 
-Catch_df_3 <- full_join(Haul_df,Catch_df) %>%
-  filter(scientificname %in% species_to_select)
+Catch_df_3 <- inner_join(Haul_df,Catch_df) %>%
+  filter(scientificname %in% species_to_select) %>% 
+  group_by()
 
 # Plot
 Evhoe_multi_plot <- ggplot(Catch_df_3)+
@@ -395,19 +398,18 @@ results = plot( fit,
 
 ```
 
-
 **Exercice:**
 
-- Plot spatial factors and temporal loadings forthe Bay of Biscay case study.
+-   Plot spatial factors and temporal loadings forthe Bay of Biscay case study.
 
-- Modify the species to make something ecologically relevant.
+-   Modify the species to make something ecologically relevant.
 
-- Change the type of rotation between the spatial factors using the function `plot_factors` (below is a reference to understand how the rotations work)
+-   Change the type of rotation between the spatial factors using the function `plot_factors` (below is a reference to understand how the rotations work)
 
 Hannachi, A., Jolliffe, I. T., & Stephenson, D. B. (2007). Empirical orthogonal functions and related techniques in atmospheric science: A review. International Journal of Climatology: A Journal of the Royal Meteorological Society, 27(9), 1119-1152.
 
-- Modify the observation model (type `?make_data`)).
+-   Modify the observation model (type `?make_data`)).
 
-- Dig in the codes of VAST and explain the overall structure of the model (`https://github.com/James-Thorson-NOAA/VAST/tree/main/inst/executables`) - if anyone want to recode it from scratch ;)
+-   Dig in the codes of VAST and explain the overall structure of the model (`https://github.com/James-Thorson-NOAA/VAST/tree/main/inst/executables`) - if anyone want to recode it from scratch ;)
 
 Another toy example is available in `https://github.com/James-Thorson-NOAA/VAST/wiki/Ordination` for computing correlation among species.
