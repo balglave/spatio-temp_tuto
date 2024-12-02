@@ -286,7 +286,7 @@ Proposal to this team \ding{224} Explore other methods to perform dimension-redu
 
 \begin{itemize}
 \item An option would be to bind the matrices of the several species by raw or by columns (see  \textcolor{blue}{\underline{\href{https://shs.hal.science/LAB-STICC_DMID/hal-04693871v2}{link}}}) \pause
-\item But this face limits, let's try decomposition methods based on tensors! \pause
+\item But this faces limits, let's try decomposition methods based on tensors! \pause
 \item For instance, investigate the Tucker decomposition:
 \end{itemize}
 $$\mathcal{X} \approx \mathcal{C} \times_1 \mathbf{Q}^1 \times_2 \mathbf{Q}^2 \times_3 \mathbf{Q}^3$$

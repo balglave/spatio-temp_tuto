@@ -412,6 +412,29 @@ plot(Evhoe_multi_plot)
 
 ```
 
+------------------------------------------------------------------------
+
+\frametitle{How to model jointly these species?}
+
+\large
+
+Let's now denote $\boldsymbol{S}_{(n \times l)}$ the matrix of observations of species in $n$ locations for $l$ species.
+
+$$\log(\boldsymbol{S}_{i,\cdot})=\boldsymbol{X} \cdot \boldsymbol{\beta} + \boldsymbol{L} \boldsymbol{\Delta}^T_{i,\cdot}$$
+
+\bigskip
+
+$\rightarrow \log(\boldsymbol{S}_{i,\cdot})$ is the log-expected densities for all species $l$ at locations $i \in \{1,\cdots, n\}$. \bigskip
+
+$\rightarrow \boldsymbol{X} \cdot \boldsymbol{\beta}$ is the trend part. \bigskip
+
+$\rightarrow \boldsymbol{L} \boldsymbol{\Delta}^T_{i,\cdot}$ is the part of the model that controls species (or variables) interaction.
+
+\bigskip
+
+\center
+
+\ding{224} How is it parameterized?
 
 ------------------------------------------------------------------------
 
@@ -499,7 +522,7 @@ Three methods to enhance computing:
 
 In both cases, this becomes a state space model where:
 
-$$S(t,s)=g\left(S(t-1,s)\right) \cdot e^{\varepsilon(t,s)}$$
+$$S(x,t)=g\left(S(x,t-1)\right) \cdot e^{\varepsilon(x,t)}$$
 
 where: \medskip
 
@@ -530,8 +553,6 @@ where: \medskip
 -   multivariate analysis \medskip
 
 \quad \ding{224} extract \underline{structuring/shared patterns}, and their variation in time \medskip
-
-\quad \ding{224} quantify \underline{correlation among species/variables}
 
 \bigskip
 
