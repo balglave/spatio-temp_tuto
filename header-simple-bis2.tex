@@ -1,0 +1,151 @@
+% package -----------------------------------------
+\usepackage{graphicx}
+\usepackage{rotating}
+%\setbeamertemplate{caption}[numbered]
+\usepackage{hyperref}
+\usepackage{caption}
+\usepackage[normalem]{ulem}
+%\mode<presentation>
+\usepackage{wasysym}
+\usepackage{amsmath}
+\usepackage{caption}
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+\usepackage{pifont}
+\usepackage{dashrule}
+\usepackage{setspace}
+\usepackage{array}
+\usepackage{ifsym}
+\usepackage{enumitem}
+\newcolumntype{P}[1]{>{\centering\arraybackslash}p{#1}}
+\newcolumntype{M}[1]{>{\centering\arraybackslash}m{#1}}
+
+% ----------------------------------------------
+\usepackage[style=authoryear,sorting=ynt]{biblatex}
+\usepackage[font={small}]{caption}
+
+\captionsetup[figure]{labelformat=empty}% redefines the caption setup of the figures environment in the beamer class.
+\usepackage{caption}
+\captionsetup[figure]{font=tiny}
+
+\setbeamertemplate{navigation symbols}{}
+
+% logo -----------------------------------------
+
+\newsavebox{\logoA}
+\newsavebox{\logoB}
+\newsavebox{\logoC}
+\savebox{\logoA}{\includegraphics[width=3cm]{images/logo_ifremer.jpg}}
+\savebox{\logoB}{\includegraphics[width=2.5cm]{images/ubs.png}}
+\savebox{\logoC}{\includegraphics[width=3cm]{images/logo-decod.png}}
+
+% \savebox{\logoD}{\includegraphics[width=1.5cm]{images/dtu_logo.jpg}}
+% \newsavebox{\logoD}
+
+\titlegraphic{%
+
+  \vspace{\baselineskip}
+  \vspace{\baselineskip}
+  \vspace{\baselineskip}
+
+  \raisebox{.5\dimexpr\ht\logoB-\ht\logoA}{\usebox{\logoA}}% raise smaller logo into position
+  \hspace*{1.5cm}
+  \usebox{\logoB}
+  \hspace*{1.5cm}%
+  % \usebox{\logoC}
+  % \hspace*{1cm}%
+  \usebox{\logoC}
+
+}
+
+
+
+% \titlegraphic{%
+%   \raisebox{.5\dimexpr\ht\logoC-\ht\logoD}{
+%   \usebox{\logoC}}% raise smaller logo into position
+%   \hspace*{3.5cm}
+%   \usebox{\logoD}
+% 
+% }
+
+
+%\titlegraphic{%
+%  \usebox{\logoD}
+%}
+
+
+\setbeamertemplate{title page}[empty]
+
+\setbeamertemplate{navigation symbols}{}
+% \setbeamertemplate{footline}[page number]
+
+\AtBeginDocument{
+
+\title[Essential Habitats]{Essential Habitats and Spatio-Temporal Analysis of Marine Species}
+
+
+
+}
+
+
+
+% ----------------------------------------------
+
+\setbeamertemplate{title page}[empty]
+
+\setbeamerfont{subtitle}{size=\small}
+
+\setbeamercovered{transparent}
+
+\definecolor{BaptisteBlue}{HTML}{6495ED}
+\definecolor{SurveyBlue}{HTML}{619CFF}
+\definecolor{BaptisteOrange}{HTML}{F39C12}
+\definecolor{BaptisteGreen}{HTML}{1E8449}
+\definecolor{BaptisteLightGreen}{HTML}{28B463}
+\definecolor{BaptisteGrey}{HTML}{A6ACAF}
+\definecolor{BaptisteRed}{HTML}{FF2A2A}
+\definecolor{BaptisteBrown}{HTML}{D45500}
+\definecolor{BaptisteDarkGrey}{HTML}{8C9193}
+
+% ---------------------------------------------------------
+% New command
+
+\newcommand{\btVFill}{\vskip0pt plus 1filll}
+
+
+% % make code-output smaller
+% \DefineVerbatimEnvironment{Highlighting}{Verbatim}{fontsize=\tiny,commandchars=\\\{\}}
+%
+% % make console-output smaller:
+%   \makeatletter
+% \def\verbatim{\tiny\@verbatim \frenchspacing\@vobeyspaces \@xverbatim}
+% \makeatother
+%
+
+% \setlength{\parskip}{0pt}
+
+
+% \setlength{\OuterFrameSep}{-4pt}
+% \makeatletter
+% \preto{\@verbatim}{\topsep=-10pt \partopsep=-10pt }
+% \makeatother
+
+% ---------------------------------------------------------
+
+% \setbeamercolor{frametitle}{fg=clemsonpurple,bg=white}
+% \setbeamercolor{title}{fg=clemsonpurple,bg=white}
+% \setbeamercolor{local structure}{fg=clemsonpurple}
+% \setbeamercolor{section in toc}{fg=clemsonpurple,bg=white}
+% % \setbeamercolor{subsection in toc}{fg=clemsonorange,bg=white}
+% \setbeamercolor{item projected}{fg=clemsonpurple,bg=white}
+% \setbeamertemplate{itemize item}{\color{clemsonpurple}$\bullet$}
+% \setbeamertemplate{itemize subitem}{\color{clemsonpurple}\scriptsize{$\bullet$}}
+\let\Tiny=\tiny
+
+\AtBeginPart{}
+\AtBeginSection{}
+\AtBeginSubsection{}
+\AtBeginSubsubsection{}
+\setlength{\emergencystretch}{0em}
+\setlength{\parskip}{0pt}
+

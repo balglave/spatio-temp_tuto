@@ -1,0 +1,13 @@
+---
+title: "Workshop 3"
+format: html
+editor: visual
+---
+
+## Multivariate EOFs with AFM
+
+Test
+
+## Multivariate EOFs with tensor decomposition (Tucker)
+
+Test

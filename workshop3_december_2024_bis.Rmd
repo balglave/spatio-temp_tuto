@@ -1,0 +1,278 @@
+---
+title: "Essential Habitats and Spatio-Temporal Analysis of Marine Species"
+subtitle: "Workshop 3"
+date: "December 2024"
+fontsize: 10pt
+bibliography : ["ref.bib"]
+csl : ices-journal-of-marine-science.csl
+output:
+  beamer_presentation:
+    theme: "Boadilla"
+    colortheme: "default"
+    slide_level: 3
+    # template: mytemplate.tex
+    includes:
+      in_header: header-simple-bis2.tex
+---
+
+### **General Context**  
+
+\begin{itemize}
+\item Marine species in temperate waters follow an \textbf{annual life cycle} (Jones, 1968; Secor, 2015).
+\item Species use different \textbf{ecological habitats} for specific functions (e.g., reproduction, feeding).
+\item \textbf{Essential habitats} are critical habitats for the renewal of marine populations.
+\end{itemize}
+
+\begin{center}
+\includegraphics[width=0.65\textwidth]{images/essential_habitats.png}
+\end{center}
+
+**Key Challenge**
+
+\begin{itemize}
+\item Importance of identifying and protecting these habitats (e.g., marine protected areas, fishing closures).
+\item Need to understand whether species share \textbf{similar spatio-temporal dynamics} and common essential habitats.
+\end{itemize}
+
+---
+
+### **Ecological Objective**
+
+**Identifying spatio-temporal dynamics and essential habitats**  
+
+\begin{itemize}
+\item Study \textbf{$p$ marine species} in the Bay of Biscay.
+\item Identify \textbf{main spatial and/or temporal variation patterns} (dimension-reduction).
+\item Identify \textbf{ecological seasons and essential habitats} (clustering).
+\end{itemize}
+
+\smallskip
+
+\quad \ding{224} Leverage advanced analytical tools (\textit{e.g.} EOFs, Tucker decomposition, VAE).
+
+\smallskip
+
+\begin{center}
+\includegraphics[width=0.85\textwidth]{images/sole_clust.png}
+\end{center}
+
+---
+
+### **Raw data**
+
+Based on a **hierarchical spatio-temporal model** integrating large and heterogeneous datasets from **scientific surveys** and **fishing declarations**
+
+\smallskip
+
+\ding{224} Spatio-temporal predictions of species biomass at **monthly resolution**.
+
+\center
+
+\only<1>{\includegraphics[width=1\textwidth]{images/int_mod_1.png}}
+
+\only<2>{\includegraphics[width=1\textwidth]{images/int_mod_2.png}}
+
+\only<3>{\includegraphics[width=1\textwidth]{images/int_mod_3.png}}
+
+\only<4>{\includegraphics[width=1\textwidth]{images/int_mod_4.png}}
+
+\only<5>{\includegraphics[width=1\textwidth]{images/int_mod_5.png}}
+
+\only<6>{\includegraphics[width=1\textwidth]{images/int_mod_6.png}}
+
+\only<7>{\includegraphics[width=1\textwidth]{images/int_mod_7.png}}
+
+\only<8>{\includegraphics[width=1\textwidth]{images/int_mod_8.png}}
+
+---
+
+### **Raw data**
+
+```{=tex}
+\begin{columns}
+\begin{column}{0.65\textwidth}
+
+\begin{center}
+
+\includegraphics[width=0.9\textwidth]{images/seabass.png}
+
+\end{center}
+
+\end{column}
+\begin{column}{0.35\textwidth}
+
+\scriptsize
+
+Average monthly distribution of sea bass in the Bay of Biscay from 2008 to 2018
+
+\end{column}
+\end{columns}
+```
+
+---
+
+### **Existing methods and analysis**
+
+\small
+
+\begin{itemize}
+\item PCA on spatio-temporal datasets (also called Empirical Orthogonal Functions) ...
+\item ... combined with a clustering analysis 
+\end{itemize}
+
+\medskip
+
+\pause
+
+\noindent\rule[7pt]{\linewidth}{0.4pt}
+
+Let's denote a spatio-temporal process $S = (S(x,t) ; x \in \mathbb{R}^2, t \in \{ t_1,\cdots,t_p \} )$. \medskip
+
+The temporal average of $S$ in denoted:
+
+$$\overline{\mathbf{s}}^t(x)=\frac{1}{p} \sum_{k=1}^{p} S(x,t_k)$$
+
+The time-centered space-time field:
+
+$$\mathbf{S}'=\left(\mathbf{s}_{t_1}-\overline{\mathbf{s}}^t,...,\mathbf{s}_{t_p}-\overline{\mathbf{s}}^t\right).$$
+
+\bigskip
+
+Then, $\mathbf{S}'$ has the form:
+
+$$\mathbf{S}'=\begin{pmatrix}
+S'(x_1,t_1) & S'(x_1,t_2) & \cdots & S'(x_1,t_p)\\
+S'(x_2,t_1) & S'(x_2,t_2) & \cdots & S'(x_2,t_p)\\
+\vdots &  \ddots & \ddots & \vdots \\
+S'(x_n,t_1) & S'(x_n,t_2) & \cdots & S'(x_n,t_p)\\
+\end{pmatrix}$$
+
+---
+
+### **Data for Analysis**
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=1.05\textwidth]{images/input_maps_sole.png}
+\caption{(left) Montly spatial log-predictions $\log S(x,t)$ of the hierarchical model. (right) Monthly anomalies of the spatial predictions $S^*(x,t)$. Each panel corresponds to the average distribution of prediction of anomalies for a month over the period 2008 - 2018.}
+\label{fig:dataset}
+\end{figure}
+
+
+---
+
+### **Basics of EOF**
+
+The spatio-temporal field is decomposed so that:
+
+$$S'(x,t) = \sum_{m=1}^r p_m(x) \cdot \alpha_m(t) \textcolor{BaptisteGrey}{+ \epsilon_m(x,t)}$$
+
+\medskip
+
+with $r$ the number of dimensions of the EOF ($r \le min(n,p)$), $p_m(x)$ the spatial term of EOF and $\alpha_m(t)$ the temporal term of EOF for dimension $m$. 
+
+$\epsilon_m(x,t)$ is an error term. \bigskip
+
+\underline{Constraints:}
+
+- minimize $E = \sum_m \sum_x \sum_y \epsilon_m(x,t)$
+
+- spatial terms and temporal terms are orthogonal
+
+$$\langle p_i(\cdot) ; p_j(\cdot)  \rangle = 0 \quad i \neq j$$
+
+$$\langle \alpha_i(\cdot) ; \alpha_j(\cdot)  \rangle = 0 \quad i \neq j$$
+
+---
+
+### **Illustration**
+
+\center
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=1\textwidth]{images/eof_sole.png}
+\caption{(Left) Loadings for the two first dimensions of the EOF. (Right) Spatial factors for the two first dimensions of the EOF. Blue dashed vertical lines corresponds to the month of January for each year.}
+\end{figure}
+
+---
+
+### **Estimating the spatial and temporal terms**
+
+\large
+
+The spatial ($p_m(x)$) and the temporal terms ($\alpha_m(t)$) are estimated through \underline{eigen-decomposition}:
+
+$$\mathbf S' \mathbf S'^T = \mathbf{C_{S'}} = \mathbf U \boldsymbol \Lambda \mathbf U^T$$
+
+\medskip
+
+or through \underline{singular value decomposition}:
+
+$$\mathbf S' = \mathbf U \boldsymbol \Sigma \mathbf V^T \quad \text{(SVD)}$$
+
+\begin{itemize}
+
+\item $\mathbf{C_{S'}}$ is the covariance function of $\mathbf S'$
+
+\item  $\mathbf U_{(n \times r)}$ contains the spatial factors ($p_m(x)$), 
+
+\item $\boldsymbol \Lambda_{(r \times r)}$ contains the eigen values and $\boldsymbol \Sigma_{(r \times r)}$ contains the singular values of $\mathbf S'$. 
+
+\smallskip
+
+\scriptsize
+
+These quantifies the percentage of variance captured by each dimension. \\
+They are diagonal matrices with $\boldsymbol \Lambda = \boldsymbol \Sigma^2$
+
+\large
+
+\item $\mathbf V_{(p \times r)}$ contains the temporal loadings ($\alpha_m(t)$)
+
+\end{itemize}
+
+---
+
+### **Clustering locations and time steps**
+
+\center
+
+\medskip
+
+HCPC on $\mathbf{U}$ (spatial factors) \ding{224} identify \textbf{functional habitats} (left and right)
+
+\medskip
+
+HCPC on $\mathbf{V}$ (temporal loadings) \ding{224} identify \textbf{ecological seasons} (right)
+
+\medskip
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=1\textwidth]{images/sole_clust.png}
+\caption{Essential habitats and associated seasons. (Left column) Mapping spatial clusters using eigenvectors to identify essential habitats. (Right column) Projection of the loading factors (seasons) and the eigen vectors (spatial clusters) on the two first dimensions of the EOF.}
+\end{figure}
+
+---
+
+### **Beyond PCA/EOFs**
+
+- **W3.1**: Time series clustering \ding{224} regroup time series that are similar (\textit{e.g.} Dynamic Time Warping) \medskip
+
+- **W3.2**: Use other distances that are mode meaningful from an ecological point of view (\textit{e.g.} MDS) \medskip
+
+- **W3.3**: Move to multivariate analysis \ding{224} Tensor decomposition technics (\textit{e.g.} Tucker, CPD) \medskip
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.6\textwidth]{images/tucker_svd.png}
+\end{figure}
+
+---
+
+\center
+
+\huge
+
+\textbf{Concrete results tomorrow!}

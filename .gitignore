@@ -52,5 +52,5 @@ images/
 
 res/
 data/
-
+*.pdf
 *.log
