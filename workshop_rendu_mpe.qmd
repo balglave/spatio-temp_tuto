@@ -1,0 +1,176 @@
+---
+title: "Etude multispecifique de l'évolution temporelle de la biomasse"
+subtitle: "Analyse Factorielle multiple"
+format: html
+editor: visual
+---
+
+## Package
+
+```{r}
+library(tidyverse)
+library(lubridate)
+library(wesanderson)
+library(FactoMineR)
+library(factoextra)
+
+```
+
+
+Chargement des données 
+
+```{r}
+#| label: load_data
+
+load("tidy/species_datarmor.RData")
+S_x_df_full <-  S_x_df_full |> 
+  mutate(Species = as.factor(Species))
+```
+
+
+Nombre de données par espèces pour les 9 espèces d'intérêt
+```{r}
+#| label: count_data
+
+
+S_x_df_full |>  
+  filter(Area == "bob_cs") |> 
+  group_by(Species, cell) |> 
+  count() |> 
+  filter( Species %in% c("Dicentrarchus_labrax", "Solea_solea", "Sepia_officinalis", "Merlangius_merlangus", 
+  "Merluccius_merluccius", "Limanda_limanda",  "Nephrops_norvegicus", "Mullus_surmuletus", "Zeus_faber")) |> 
+  filter(cell ==1)
+
+```
+
+
+Formattage des données
+
+
+```{r}
+#| label: format_data
+## Formattage des données
+S_x_multi_species <- S_x_df_full |> 
+  filter( Species %in% c("Dicentrarchus_labrax", "Solea_solea", "Sepia_officinalis", "Merlangius_merlangus", 
+                         "Merluccius_merluccius", "Limanda_limanda",  "Nephrops_norvegicus", "Mullus_surmuletus", "Zeus_faber")) |> 
+  filter(Area == "bob_cs") |> 
+  select(cell,  Year_Month, S_x, Species) |> 
+  pivot_wider( names_from = c(Species, Year_Month), values_from = c(S_x)) |> 
+  column_to_rownames(var="cell")
+
+```
+
+
+Analyse Factorielle Multiple
+
+```{r}
+#| label: afm
+
+## AFM
+multi_species_mfa <- MFA(S_x_multi_species, 
+    group = rep(180, 9), # un vecteur qui spécifie le nombre de variable dans chaque groupe. Les variables doivent être organisées comme il faut
+    type = rep("s", 9), # pour indiquer que ce sont de svariables quanti que l'on souhaite normaliser et ce pour chaque groupe
+    ncp=11, # on garde tous les axes
+    name.group=c("Dicentrarchus_labrax", "Solea_solea", "Sepia_officinalis", "Merlangius_merlangus", 
+                 "Merluccius_merluccius", "Limanda_limanda",  "Nephrops_norvegicus", "Mullus_surmuletus", "Zeus_faber"), graph = TRUE)
+
+```
+
+## Interprétation des axes
+
+```{r}
+plot(multi_species_mfa, choix="axes", axes= c(1,2))
+
+
+
+## qualité de représentation
+fviz_cos2(multi_species_mfa, choice = "group", axes = 1)
+fviz_cos2(multi_species_mfa, choice = "group", axes = 2)
+fviz_cos2(multi_species_mfa, choice = "group", axes = 3)
+
+
+## contribution des variables
+fviz_contrib(multi_species_mfa, choice = "group", axes = 1)
+fviz_contrib(multi_species_mfa, choice = "group", axes = 2)
+fviz_contrib(multi_species_mfa, choice = "group", axes = 3)
+
+## qualité de représentation
+fviz_mfa_var(multi_species_mfa, choice = "group", axes = c(1,2))
+fviz_mfa_var(multi_species_mfa, choice = "group", axes = c(3,4))
+
+
+##
+fviz_mfa_var(multi_species_mfa, 'group', axes = c(1,2))
+fviz_mfa_var(multi_species_mfa, 'group', axes = c(3,4))
+
+
+```
+
+
+## Résumé des patrons 
+
+```{r}
+
+dta_cel_lat_long <- 
+  S_x_df_full |> 
+  filter(Year_Month == "2008_01", Species ==  "Solea_solea") |> 
+  filter(Area == "bob_cs") |> 
+  select(cell, lati, long) |> 
+  as_tibble()
+  
+U_tbl <- multi_species_mfa$global.pca$svd$U |>  as_tibble()
+
+U_tbl
+  
+maps_princ <- dta_cel_lat_long |>  bind_cols(U_tbl) 
+
+multi_species_ccord <- multi_species_mfa$global.pca$var$coord  |>  as_tibble(rownames = "Id") |> 
+  mutate(Species = str_extract(Id, pattern  = "^[A-Za-z]+_[A-Za-z]+"),
+          Year_month = str_extract(Id, "\\d{4}_\\d{2}$"))
+
+theme_set(theme_minimal())
+pal <- wes_palette("Zissou1", 9, type = "continuous")  
+
+p1_maps <- maps_princ |> ggplot() + geom_raster(aes(x=long, y = lati, fill = V1)) +
+  scale_fill_distiller(palette = "Spectral")
+
+p1_loadings  <- multi_species_ccord |>  
+  select(Dim.1, Species, Year_month) |>
+  mutate(Species = as.factor(Species)) |> 
+  mutate(date = ym(Year_month)) |> 
+  ggplot() + aes(x=date, y = Dim.1, col = Species) + geom_line() + 
+  facet_wrap(~Species) + scale_color_manual(values = pal)
+
+p1 <- ggpubr::ggarrange(p1_maps, p1_loadings, ncol = 2)
+
+
+p2_maps <- maps_princ |> ggplot() + geom_raster(aes(x=long, y = lati, fill = V2)) +
+  scale_fill_distiller(palette = "Spectral")
+
+p2_loadings  <- multi_species_ccord |>  
+  select(Dim.2, Species, Year_month) |>
+  mutate(Species = as.factor(Species)) |> 
+  mutate(date = ym(Year_month)) |> 
+    ggplot() + aes(x=date, y = Dim.2, col = Species) + geom_line() + 
+  facet_wrap(~Species) + scale_color_manual(values = pal)
+
+p2 <- ggpubr::ggarrange(p2_maps, p2_loadings, ncol = 2)
+
+p3_maps <- maps_princ |> ggplot() + geom_raster(aes(x=long, y = lati, fill = V3)) +
+  scale_fill_distiller(palette = "Spectral")
+
+p3_loadings  <- multi_species_ccord |>  
+  select(Dim.3, Species, Year_month) |>
+  mutate(Species = as.factor(Species)) |> 
+  mutate(date = ym(Year_month)) |> 
+    ggplot() + aes(x=date, y = Dim.3, col = Species) + geom_line() + 
+  facet_wrap(~Species) + scale_color_manual(values = pal)
+
+p3 <- ggpubr::ggarrange(p3_maps, p3_loadings, ncol = 2)
+
+p1
+
+p2
+
+p3
+```
